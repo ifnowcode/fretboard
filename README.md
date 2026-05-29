@@ -1,5 +1,7 @@
 # 🎸 Fretboard Visualizer
 
+(https://ifnowcode.github.io/fretboard/)[https://ifnowcode.github.io/fretboard/]
+
 A fast, deterministic, browser‑based fretboard engine for exploring **scales, chords, tunings, intervals, enharmonics, and generated progressions** across multiple stringed instruments. Built with clean, modular JavaScript and a canvas‑based rendering pipeline.
 
 --

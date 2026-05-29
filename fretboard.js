@@ -2,7 +2,7 @@
 const NOTES_SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const NOTES_FLAT = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
 
-const CHORDS = {
+const CHORDS = { // deprecated but allowing a cooling off before deleting
   "":     [0,4,7],            // Major
   "m":    [0,3,7],            // Minor
   "7":    [0,4,7,10],         // Dominant 7th
@@ -29,7 +29,7 @@ const CHORDS = {
   'm7b5': [0,3,7],            // Half Diminished Minor 7
 };
 
-const CHORD_ORDER = ["", "m", "7", "m7", "maj7", "dim", "aug", "5", "6", "m6", "9", "m9", "11", "m11", "13", "m13", "mmaj7", "madd9"];
+//const CHORD_ORDER = ["", "m", "7", "m7", "maj7", "dim", "aug", "5", "6", "m6", "9", "m9", "11", "m11", "13", "m13", "mmaj7", "madd9"];
 
 const CHORD_INTERVALS = {
   "":        [0,4,7],          // Major
@@ -40,7 +40,7 @@ const CHORD_INTERVALS = {
   "sus2sus4":[0,2,5,7],        // Both suspensions
 
   // Major family
-  "maj7":    [0,4,7,11],
+  "maj7":    [0,4,7,11],       // Major 7th
   "maj9":    [0,4,7,11,14],
   "maj11":   [0,4,7,11,14,17],
   "maj13":   [0,4,7,11,14,17,21],
@@ -216,12 +216,22 @@ const hideChord      = document.getElementById("hideChord");
 const showRoot      = document.getElementById("showRoot");
 const useFlats      = document.getElementById("useFlats");
 
+showScale.addEventListener("change", () => {
+  if (showScale.checked) hideScale.checked = false;
+  render();
+});
 hideScale.addEventListener("change", () => {
   if (hideScale.checked) showScale.checked = false;
   render();
 });
 hideChord.addEventListener("change", () => {
-  if (hideChord.checked) showScale.checked = true;
+  if (hideChord.checked) {
+    showScale.checked = true;
+  } else {
+    if (hideScale.checked) {
+      showScale.checked = false;
+    }
+  }
   render();
 });
 
