@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>JS Fretboard</title>
+<style>
+  body { font-family:sans-serif; background:#111; color:#eee; }
+  #controls { margin-bottom:10px; }
+  select, input { padding:4px; margin-right:6px; }
+  canvas { background:#222; border:1px solid #555; }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <select id="tuning"></select>
+  <select id="root"></select>
+  <select id="chord"></select>
+  <select id="mode"></select>
+
+  <label>
+    <input type="checkbox" id="showScale" checked>
+    Show Scale
+  </label>
+
+  <label>
+    <input type="checkbox" id="flip">
+    Flip Strings
+  </label>
+</div>
+
+<canvas id="fretboard" width="1200" height="260"></canvas>
+
+<script>
+// ------------------------------
+// DATA
+// ------------------------------
+const NOTES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+const CHORDS = {
+  "":  [0,4,7],
+  "m": [0,3,7],
+  "7": [0,4,7,10],
+  "m7":[0,3,7,10],
+  "maj7":[0,4,7,11],
+  "dim":[0,3,6],
+  "aug":[0,4,8]
+};
+
+const MODES = {
+  "Ionian (Major)"     : [0,2,4,5,7,9,11],
+  "Dorian"             : [0,2,3,5,7,9,10],
+  "Phrygian"           : [0,1,3,5,7,8,10],
+  "Lydian"             : [0,2,4,6,7,9,11],
+  "Mixolydian"         : [0,2,4,5,7,9,10],
+  "Aeolian (Minor)"    : [0,2,3,5,7,8,10],
+  "Locrian"            : [0,1,3,5,6,8,10]
+};
+
+const TUNINGS = {
+  "Guitar Standard": ["E","A","D","G","B","E"],
+  "Drop D": ["D","A","D","G","B","E"],
+  "Open G": ["D","G","D","G","B","D"]
+};
+
+const FRETS = 15;
+
+// ------------------------------
+// UI
+// ------------------------------
+const rootSel   = document.getElementById("root");
+const chordSel  = document.getElementById("chord");
+const modeSel   = document.getElementById("mode");
+const tuningSel = document.getElementById("tuning");
+const showScale = document.getElementById("showScale");
+const flipSel   = document.getElementById("flip");
+
+NOTES.forEach(n => rootSel.add(new Option(n,n)));
+Object.keys(CHORDS).forEach(c => chordSel.add(new Option("Chord "+(c||"Maj"),c)));
+Object.keys(MODES).forEach(m => modeSel.add(new Option(m,m)));
+Object.keys(TUNINGS).forEach(t => tuningSel.add(new Option(t,t)));
+
+rootSel.value="C";
+chordSel.value="";
+modeSel.value="Ionian (Major)";
+tuningSel.value="Guitar Standard";
+
+// ------------------------------
+// CANVAS
+// ------------------------------
+const canvas = document.getElementById("fretboard");
+const ctx = canvas.getContext("2d");
+
+// ------------------------------
+// HELPERS
+// ------------------------------
+const idx = n => NOTES.indexOf(n);
+const noteAt = (open, steps) => NOTES[(idx(open)+steps)%12];
+const getNotes = (root, intervals) => intervals.map(i => noteAt(root,i));
+
+// ------------------------------
+// DRAW FRETBOARD
+// ------------------------------
+function drawFretboard(strings) {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const h = canvas.height / (strings.length+1);
+
+  // strings
+  for (let s=1; s<=strings.length; s++) {
+    ctx.strokeStyle="#aaa";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(50, h*s);
+    ctx.lineTo(1150, h*s);
+    ctx.stroke();
+  }
+
+  // frets
+  for (let f=0; f<=FRETS; f++) {
+    ctx.strokeStyle = f===0 ? "#fff" : "#666";
+    ctx.lineWidth = f===0 ? 6 : 2;
+    const x = 50 + f*70;
+    ctx.beginPath();
+    ctx.moveTo(x, h);
+    ctx.lineTo(x, h*strings.length);
+    ctx.stroke();
+  }
+}
+
+// ------------------------------
+// PLOT NOTES
+// ------------------------------
+function plotNotes(strings, notes, color, alpha=1.0) {
+  const h = canvas.height / (strings.length+1);
+
+  ctx.globalAlpha = alpha;
+
+  for (let s=0; s<strings.length; s++) {
+    const open = strings[s];
+    for (let f=0; f<=FRETS; f++) {
+      const n = noteAt(open,f);
+      if (notes.includes(n)) {
+        const x = 50 + f*70 + 35;
+        const y = h*(s+1);
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x,y,18,0,Math.PI*2);
+        ctx.fill();
+
+        ctx.fillStyle="#000";
+        ctx.font="14px sans-serif";
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillText(n,x,y);
+      }
+    }
+  }
+
+  ctx.globalAlpha = 1.0;
+}
+
+// ------------------------------
+// MAIN RENDER
+// ------------------------------
+function render() {
+  let strings = [...TUNINGS[tuningSel.value]];
+  if (flipSel.checked) strings.reverse();
+
+  drawFretboard(strings);
+
+  const root = rootSel.value;
+  const chordNotes = getNotes(root, CHORDS[chordSel.value]);
+  const scaleNotes = getNotes(root, MODES[modeSel.value]);
+
+  const showScaleMode = showScale.checked;
+
+  // scale = bright, chord = dim OR vice versa
+  if (showScaleMode) {
+    plotNotes(strings, scaleNotes, "#0af", 1.0);
+    plotNotes(strings, chordNotes, "#0f0", 0.25);
+  } else {
+    plotNotes(strings, chordNotes, "#0f0", 1.0);
+    plotNotes(strings, scaleNotes, "#0af", 0.25);
+  }
+}
+
+// ------------------------------
+// EVENTS
+// ------------------------------
+[rootSel, chordSel, modeSel, tuningSel, showScale, flipSel]
+  .forEach(el => el.onchange = render);
+
+render();
+
+</script>
+</body>
+</html>

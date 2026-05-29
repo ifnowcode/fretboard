@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>JS Fretboard</title>
+<style>
+  body { font-family: sans-serif; background:#111; color:#eee; }
+  #controls { margin-bottom: 10px; }
+  select { padding:4px; margin-right:6px; }
+  canvas { background:#222; border:1px solid #555; }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <select id="root"></select>
+  <select id="chord"></select>
+  <select id="tuning"></select>
+</div>
+
+<canvas id="fretboard" width="1200" height="260"></canvas>
+
+<script>
+// ------------------------------
+// DATA
+// ------------------------------
+const NOTES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const CHORDS = {
+  "":  [0,4,7],
+  "m": [0,3,7],
+  "7": [0,4,7,10],
+  "m7":[0,3,7,10],
+  "maj7":[0,4,7,11],
+  "dim":[0,3,6],
+  "aug":[0,4,8]
+};
+const TUNINGS = {
+  "Guitar Standard": ["E","A","D","G","B","E"],
+  "Drop D": ["D","A","D","G","B","E"],
+  "Open G": ["D","G","D","G","B","D"]
+};
+
+// ------------------------------
+// UI POPULATION
+// ------------------------------
+const rootSel = document.getElementById("root");
+const chordSel = document.getElementById("chord");
+const tuningSel = document.getElementById("tuning");
+
+NOTES_SHARP.forEach(n => rootSel.add(new Option(n,n)));
+Object.keys(CHORDS).forEach(c => chordSel.add(new Option("Chord "+(c||"Maj"),c)));
+Object.keys(TUNINGS).forEach(t => tuningSel.add(new Option(t,t)));
+
+rootSel.value="C";
+chordSel.value="";
+tuningSel.value="Guitar Standard";
+
+// ------------------------------
+// FRETBOARD RENDERING
+// ------------------------------
+const canvas = document.getElementById("fretboard");
+const ctx = canvas.getContext("2d");
+const FRETS = 15;
+
+function drawFretboard() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const tuning = TUNINGS[tuningSel.value];
+  const stringCount = tuning.length;
+  const h = canvas.height / (stringCount+1);
+
+  // strings
+  for (let s=1; s<=stringCount; s++) {
+    ctx.strokeStyle="#aaa";
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(50, h*s);
+    ctx.lineTo(1150, h*s);
+    ctx.stroke();
+  }
+
+  // frets
+  for (let f=0; f<=FRETS; f++) {
+    ctx.strokeStyle = f===0 ? "#fff" : "#666";
+    ctx.lineWidth = f===0 ? 6 : 2;
+    const x = 50 + f*70;
+    ctx.beginPath();
+    ctx.moveTo(x, h);
+    ctx.lineTo(x, h*stringCount);
+    ctx.stroke();
+  }
+}
+
+// ------------------------------
+// NOTE CALCULATION
+// ------------------------------
+function noteIndex(n){ return NOTES_SHARP.indexOf(n); }
+function noteAt(start, steps){ return NOTES_SHARP[(noteIndex(start)+steps)%12]; }
+
+function getChordNotes(root, intervals){
+  return intervals.map(i => noteAt(root, i));
+}
+
+// ------------------------------
+// PLOT CHORD TONES
+// ------------------------------
+function plotChord() {
+  drawFretboard();
+
+  const tuning = TUNINGS[tuningSel.value];
+  const root = rootSel.value;
+  const chord = CHORDS[chordSel.value];
+  const notes = getChordNotes(root, chord);
+
+  const stringCount = tuning.length;
+  const h = canvas.height / (stringCount+1);
+
+  for (let s=0; s<stringCount; s++) {
+    const open = tuning[s];
+    for (let f=0; f<=FRETS; f++) {
+      const note = noteAt(open, f);
+      if (notes.includes(note)) {
+        const x = 50 + f*70 + 35;
+        const y = h*(s+1);
+        ctx.fillStyle = note===root ? "#0f0" : "#09f";
+        ctx.beginPath();
+        ctx.arc(x,y,18,0,Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle="#000";
+        ctx.font="14px sans-serif";
+        ctx.textAlign="center";
+        ctx.textBaseline="middle";
+        ctx.fillText(note,x,y);
+      }
+    }
+  }
+}
+
+// ------------------------------
+// EVENTS
+// ------------------------------
+rootSel.onchange = plotChord;
+chordSel.onchange = plotChord;
+tuningSel.onchange = plotChord;
+
+plotChord();
+</script>
+</body>
+</html>

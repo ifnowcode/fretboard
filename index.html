@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Fretboard</title>
+<style>
+  body { font-family:sans-serif; background:#111; color:#eee; }
+  .controls { margin-bottom:10px; }
+  select, input { padding:4px; margin-right:6px; }
+  canvas { background:#222; border:1px solid #555; }
+  #output {
+    margin-top:10px;
+    padding:8px 12px;
+    width:100%;
+    box-sizing:border-box;
+    background:#181818;
+    color:#eee;
+    min-height:24px;
+    font-family:monospace;
+    white-space:pre-wrap;
+  }
+</style>
+
+</head>
+<body>
+
+<div class="controls">
+  <!-- Chord -->
+  <label>Chord Root:
+    <select id="chordRoot"></select>
+  </label>
+  <label>Chord Type:
+    <select id="chordType"></select>
+  </label>
+
+  <!-- Scale -->
+  <label>Scale Root:
+    <select id="scaleRoot"></select>
+  </label>
+  <label>Scale Mode:
+    <select id="scaleMode"></select>
+  </label>
+
+  <!-- Tuning -->
+  <select id="tuning"></select>
+
+  <!-- Toggles -->
+  <label>
+    <input type="checkbox" id="showScale" checked>
+    Show Scale
+  </label>
+  <label>
+    <input type="checkbox" id="flip">
+    Flip Strings
+  </label>
+</div>
+
+<canvas id="fretboard" width="1200" height="260"></canvas>
+
+<div class="controls" id="textControls">
+  <button id="genRandomBtn">Generate Random</button>
+  <button id="genInKeyOfBtn">Generate InKeyOf</button>
+  <span>></span>
+  <button id="showAllKeys">Show All Keys</button>
+  <button id="clearSong">Clear Song</button>
+  <span>|</span>
+  <button id="showResources">Show Resources</button>
+  <span>|</span>
+  <label>
+    <input type="checkbox" id="hideScale">
+    Hide Scale
+  </label>
+  <label>
+    <input type="checkbox" id="hideChord">
+    Hide Chord
+  </label>
+  <label>
+    <input type="checkbox" id="showRoot">
+    Show Root
+  </label>
+  <label>
+    <input type="checkbox" id="useFlats">
+    Flats
+  </label>
+</div>
+
+<div id="output"></div>
+<script src="gensong.js"></script>
+<script src="fretboard.js"></script>
+<script>
+const genRandomBtn = document.getElementById("genRandomBtn");
+const genInKeyOfBtn = document.getElementById("genInKeyOfBtn");
+const showAllKeysBtn = document.getElementById("showAllKeys");
+const showResourcesBtn = document.getElementById("showResources");
+const clearSongBtn = document.getElementById("clearSong");
+
+const gs = new GenSong();
+gs.load();
+
+let randsong = "";
+let resources = "";
+let gentext = gs.empty() ? "" : gs.song();
+
+genRandomBtn.addEventListener("click", () => {
+  //textout("GenSong triggered…");
+  gs.random();
+  if (!gs.empty()) {
+    gentext = gs.song() + "\n" + resources;
+  } else {
+    gentext = resources;
+  }
+  render();
+  gs.save();
+});
+genInKeyOfBtn.addEventListener("click", () => {
+  gs.inKeyOf(scaleRootSel.value);
+  if (!gs.empty()) {
+    gentext = gs.song() + "\n" + resources;
+  } else {
+    gentext = resources;
+  }
+  render();
+  gs.save();
+});
+showAllKeysBtn.addEventListener("click", () => {
+  if (!gs.empty()) {
+    gentext = gs.song() + "\n" + gs.allKeys();
+  }
+  render();
+});
+showResourcesBtn.addEventListener("click", () => {
+  if (!gs.empty()) {
+    gentext = gs.song() + "\n" + gs.keyRef();
+  } else {
+    gentext = gs.keyRef();
+  }
+  render();
+});
+clearSongBtn.addEventListener("click", () => {
+  gentext = "";
+  gs.clear();
+  render();
+});
+render();
+</script>
+</body>
+</html>
