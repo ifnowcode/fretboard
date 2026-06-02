@@ -18,9 +18,9 @@ class GenSong {
       ['F','Gm','Am','Bb','C','Dm','Edim  (o12oxx)']
     ];
   constructor() {
-    this.chords = [1, 2, 3, 4, 5, 6];
-    this.weightedChords = [1, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 7];
-    this.weightedKeyIndices = [0, 0, 0, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 7, 8, 9, 10, 11, 11];
+    this.chords = [1,2,3,4,5,6];
+    this.weightedChords = [0,0,0,0,0,1,1,2,2,3,3,3,4,4,4,4,5,5,5,6];
+    this.weightedKeyIndices = [0,0,0,0,1,1,1,2,2,3,3,4,4,5,5,6,7,8,9,10,11,11,12,12,12];
 
     this.notes = [];
     this.keyChords = [];
@@ -47,25 +47,7 @@ class GenSong {
     const keyIndex = this._choice(this.weightedKeyIndices);
     this.keyChords = this.keys[keyIndex];
 
-    // first chord
-    const first = this._choice(this.chords);
-    this.notes.push(first);
-
-    // middle chords (no immediate repeats)
-    for (let i = 0; i < amount - 1; i++) {
-      let chord = this._choice(this.chords);
-      while (chord === this.notes[i]) {
-        chord = this._choice(this.chords);
-      }
-      this.notes.push(chord);
-    }
-
-    // last chord different from first
-    let last = this._choice(this.chords);
-    while (last === first) {
-      last = this._choice(this.chords);
-    }
-    this.notes.push(last);
+    this.generateChords(amount);
   }
   
   inKeyOf(keyName, amount = null) {
@@ -91,6 +73,10 @@ class GenSong {
       if (amount < 3) amount = 3;
     }
 
+    this.generateChords(amount);
+  }
+  
+  generateChords_00(amount) {
     // First chord
     const first = this._choice(this.chords);
     this.notes.push(first);
@@ -112,6 +98,32 @@ class GenSong {
     this.notes.push(last);
   }
   
+  generateChords(amount) {
+    this.notes = [];
+
+    // First chord
+    const first = this._choice(this.chords);
+    this.notes.push(first);
+
+    // Middle chords (no immediate repeats)
+    for (let i = 0; i < amount - 1; i++) {
+      const prev = this.notes[i];
+      // allow repeats on 0 in random draw
+      if (Math.floor(Math.random() * 2) == 0) {
+        this.notes.push(this._choice(this.chords));
+      } else {
+        // Build a candidate list excluding the previous chord
+        const candidates = this.chords.filter(c => c !== prev);
+        // Choose from the filtered list
+        this.notes.push(this._choice(candidates));
+      }
+    }
+
+    // Last chord (must differ from first)
+    const lastCandidates = this.chords.filter(c => c !== first);
+    this.notes.push(this._choice(lastCandidates));
+  }
+
   song() {
     // --- Build output text ---
     let out = [];
@@ -181,9 +193,10 @@ class GenSong {
     return out.join("\n");
   }
   
-  clear() {
+  clear(name = "gensong") {
     this.notes = [];
     this.keyChords = [];
+    localStorage.removeItem(name);
   }
   
   empty() {

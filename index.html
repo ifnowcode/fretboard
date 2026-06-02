@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Fretboard</title>
+<title>🎸 Fretboard</title> <!-- 🎶🎼🎸🎻 -->
 <style>
   body { font-family:sans-serif; background:#111; color:#eee; }
   .controls { margin-bottom:10px; }
@@ -55,7 +55,7 @@
   </label>
 </div>
 
-<canvas id="fretboard" width="1200" height="260"></canvas>
+<canvas id="fretboard" width="1200" height="300"></canvas>
 
 <div class="controls" id="textControls">
   <button id="genRandomBtn">Generate Random</button>
@@ -75,6 +75,10 @@
     Hide Chord
   </label>
   <label>
+    <input type="checkbox" id="showCaged">
+    Show CAGED
+  </label>
+  <label>
     <input type="checkbox" id="showRoot">
     Show Root
   </label>
@@ -85,63 +89,70 @@
 </div>
 
 <div id="output"></div>
-<script src="gensong.js"></script>
+<a target="_blank" href="https://www.scales-chords.com/chordid.php">
+SCALESCHORDS Chord Identifier</a>
 <script src="fretboard.js"></script>
+<script src="gensong.js"></script>
+<script src="caged.js"></script>
 <script>
-const genRandomBtn = document.getElementById("genRandomBtn");
-const genInKeyOfBtn = document.getElementById("genInKeyOfBtn");
-const showAllKeysBtn = document.getElementById("showAllKeys");
-const showResourcesBtn = document.getElementById("showResources");
-const clearSongBtn = document.getElementById("clearSong");
+let gentext = '';
+window.addEventListener("DOMContentLoaded", () => {
+  const genRandomBtn = document.getElementById("genRandomBtn");
+  const genInKeyOfBtn = document.getElementById("genInKeyOfBtn");
+  const showAllKeysBtn = document.getElementById("showAllKeys");
+  const showResourcesBtn = document.getElementById("showResources");
+  const clearSongBtn = document.getElementById("clearSong");
 
-const gs = new GenSong();
-gs.load();
+  const gs = new GenSong();
+  gs.load();
 
-let randsong = "";
-let resources = "";
-let gentext = gs.empty() ? "" : gs.song();
+  let randsong = "";
+  let resources = "";
+  gentext = gs.empty() ? "" : gs.song();
 
-genRandomBtn.addEventListener("click", () => {
-  //textout("GenSong triggered…");
-  gs.random();
-  if (!gs.empty()) {
-    gentext = gs.song() + "\n" + resources;
-  } else {
-    gentext = resources;
-  }
+  genRandomBtn.addEventListener("click", () => {
+    //textout("GenSong triggered…");
+    gs.random();
+    if (!gs.empty()) {
+      gentext = gs.song() + "\n" + resources;
+    } else {
+      gentext = resources;
+    }
+    render();
+    gs.save();
+  });
+  genInKeyOfBtn.addEventListener("click", () => {
+    gs.inKeyOf(scaleRootSel.value);
+    if (!gs.empty()) {
+      gentext = gs.song() + "\n" + resources;
+    } else {
+      gentext = resources;
+    }
+    render();
+    gs.save();
+  });
+  showAllKeysBtn.addEventListener("click", () => {
+    if (!gs.empty()) {
+      gentext = gs.song() + "\n" + gs.allKeys();
+    }
+    render();
+  });
+  showResourcesBtn.addEventListener("click", () => {
+    if (!gs.empty()) {
+      gentext = gs.song() + "\n" + gs.keyRef();
+    } else {
+      gentext = gs.keyRef();
+    }
+    render();
+  });
+  clearSongBtn.addEventListener("click", () => {
+    gentext = "";
+    gs.clear();
+    render();
+  });
   render();
-  gs.save();
 });
-genInKeyOfBtn.addEventListener("click", () => {
-  gs.inKeyOf(scaleRootSel.value);
-  if (!gs.empty()) {
-    gentext = gs.song() + "\n" + resources;
-  } else {
-    gentext = resources;
-  }
-  render();
-  gs.save();
-});
-showAllKeysBtn.addEventListener("click", () => {
-  if (!gs.empty()) {
-    gentext = gs.song() + "\n" + gs.allKeys();
-  }
-  render();
-});
-showResourcesBtn.addEventListener("click", () => {
-  if (!gs.empty()) {
-    gentext = gs.song() + "\n" + gs.keyRef();
-  } else {
-    gentext = gs.keyRef();
-  }
-  render();
-});
-clearSongBtn.addEventListener("click", () => {
-  gentext = "";
-  gs.clear();
-  render();
-});
-render();
 </script>
+<script src="app.js"></script>
 </body>
 </html>

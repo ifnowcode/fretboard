@@ -1,4 +1,42 @@
 // ---------------- DATA ----------------
+function random(min, max) {
+  return min + Math.random() * (max + 1 - min);
+}
+
+function randomIndex(length) {
+  return Math.floor(Math.random() * length)
+}
+
+function getRandomColor() {
+  var letters = '0123456789ABCDEF';
+  var color = '#';
+  for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  //console.log("Color:", color);
+  return color;
+}
+
+function removeExtension(path) {
+  return path.substring(0, path.lastIndexOf('.')) || path;
+}
+
+function getFile(path) {
+  return path.replace(/^.*[\\\/]/, '');
+}
+
+function getFileName(path) {
+  return removeExtension(getFile(path));
+}
+
+function getExtension(filename) {
+  const sections = filename.split('/');
+  //console.log("Sections:", sections);
+  const parts = sections[sections.length-1].split('.');
+  //console.log("Parts:", parts);
+  return parts.length > 1 ? parts.pop() : '';
+}
+
 const NOTES_SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const NOTES_FLAT = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
 
@@ -99,7 +137,7 @@ const CHORD_INTERVALS = {
 
 const CHORD_INTERVAL_ORDER = [
   // popular quick list
-  "", "m","5", "7", "m7", "maj7", "dim", "aug", "sus2", "sus4", "sus2sus4",
+  "", "m", "5", "7", "m7", "maj7", "dim", "aug", "sus2", "sus4", "sus2sus4",
 
   // Major family
   "add9",
@@ -203,85 +241,9 @@ const TUNINGS = {
 
 const FRETS = 15;
 
-// ------------- UI ELEMENTS -------------
-const chordRootSel = document.getElementById("chordRoot");
-const chordTypeSel = document.getElementById("chordType");
-const scaleRootSel = document.getElementById("scaleRoot");
-const scaleModeSel = document.getElementById("scaleMode");
-const tuningSel    = document.getElementById("tuning");
-const showScale    = document.getElementById("showScale");
-const flipSel      = document.getElementById("flip");
-const hideScale      = document.getElementById("hideScale");
-const hideChord      = document.getElementById("hideChord");
-const showRoot      = document.getElementById("showRoot");
-const useFlats      = document.getElementById("useFlats");
-
-showScale.addEventListener("change", () => {
-  if (showScale.checked) hideScale.checked = false;
-  render();
-});
-hideScale.addEventListener("change", () => {
-  if (hideScale.checked) showScale.checked = false;
-  render();
-});
-hideChord.addEventListener("change", () => {
-  if (hideChord.checked) {
-    showScale.checked = true;
-  } else {
-    if (hideScale.checked) {
-      showScale.checked = false;
-    }
-  }
-  render();
-});
-
-// populate note-based roots
-NOTES_SHARP.forEach((n, i) => {
-  const label = displayNote(n, useFlats.checked);
-  chordRootSel.add(new Option(label,n));
-  scaleRootSel.add(new Option(label, n)); // value stays canonical
-});
-
-// chord types
-CHORD_INTERVAL_ORDER.forEach(c => {
-  chordTypeSel.add(new Option(c, c));
-});
-
-// scale modes
-Object.keys(MODES).forEach(m =>
-  scaleModeSel.add(new Option(m,m))
-);
-
-// tunings
-Object.keys(TUNINGS).forEach(t =>
-  tuningSel.add(new Option(t,t))
-);
-
-// defaults
-chordRootSel.value = "C";
-chordTypeSel.value = "Maj";
-scaleRootSel.value = "C";
-scaleModeSel.value = "Ionian (Major)";
-tuningSel.value    = "Guitar Standard";
-
-// ------------- CANVAS / HELPERS -------------
-const canvas = document.getElementById("fretboard");
-const ctx = canvas.getContext("2d");
-const outputDiv = document.getElementById("output");
-
-function textout(msg) {
-  outputDiv.textContent = msg == null ? "" : String(msg);
-}
-
-function htmlout(html) {
-  outputDiv.innerHTML = html == null ? "" : String(html);
-}
-
 const idx = n => NOTES_SHARP.indexOf(n);
 const noteAt = (open, steps) => NOTES_SHARP[(idx(open)+steps)%12];
 const getNotes = (root, intervals) => intervals.map(i => noteAt(root,i));
-
-
 
 function displayNote(note, useFlats) {
   const i = NOTES_SHARP.indexOf(note);
@@ -289,157 +251,3 @@ function displayNote(note, useFlats) {
   if (i === -1) return note; // safety fallback
   return useFlats ? NOTES_FLAT[i] : NOTES_SHARP[i];
 }
-
-// ------------- DRAW FRETBOARD -------------
-function drawFretboard(strings, reversed=false) {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  const h = canvas.height / (strings.length+1);
-
-  // frets
-  for (let f=0; f<=FRETS; f++) {
-    ctx.strokeStyle = f===1 ? "#fff" : "#666";
-    ctx.lineWidth = f===1 ? 6 : 2;
-    const x = 50 + f*70;
-    ctx.beginPath();
-    ctx.moveTo(x, h);
-    ctx.lineTo(x, h*strings.length);
-    ctx.stroke();
-    
-    if (strings.length >= 4) {
-      // Fretboard position markers (3, 5, 7, 12)
-      const markerFrets = [3, 5, 7, 9, 12];
-      if (markerFrets.includes(f)) {
-        const dotX = x + 35; // center between frets
-        const midY = (h + h * strings.length) / 2;
-
-        ctx.fillStyle = "#000"; // black, unobtrusive
-
-        if (f === 12) {
-          // double dot at 12th fret
-          ctx.beginPath();
-          ctx.arc(dotX, midY - h * 1, 12, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.arc(dotX, midY + h * 1, 12, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          // single dot
-          ctx.beginPath();
-          ctx.arc(dotX, midY, 12, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-  }
-  
-  // strings
-  let lineWidth = reversed ? 1 : 6;
-  for (let s=1; s<=strings.length; s++) {
-    ctx.strokeStyle="#a70";
-    ctx.lineWidth = reversed ? lineWidth++ : lineWidth--;
-    ctx.beginPath();
-    ctx.moveTo(50, h*s);
-    ctx.lineTo(1150, h*s);
-    ctx.stroke();
-  }
-  
-}
-
-// ------------- PLOT NOTES -------------
-function plotNotes(strings, notes, color, alpha=1.0, border=false) {
-  const h = canvas.height / (strings.length+1);
-  ctx.globalAlpha = alpha;
-  
-  const chordRoot = chordRootSel.value;
-  const scaleRoot = scaleRootSel.value;
-  const mode = showScale.checked ? "scale" : "chord";
-
-  for (let s=0; s<strings.length; s++) {
-    const open = strings[s];
-    for (let f=0; f<=FRETS; f++) {
-      const rawNote = noteAt(open, f);
-      const n = displayNote(rawNote, useFlats.checked);
-      if (notes.includes(rawNote)) {
-        const x = 50 + f*70 + 35;
-        const y = h*(s+1);
-
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(x,y,13,0,Math.PI*2);
-        ctx.fill();
-        
-        if (showRoot.checked) {
-          // Detect root note
-          const isRoot =
-            (mode === "scale" && rawNote === scaleRoot) ||
-            (mode === "chord" && rawNote === chordRoot);
-
-          if (isRoot) {
-            ctx.strokeStyle = "#fff";   // or any color you want
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(x, y, 24, 0, Math.PI * 2); // slightly larger than the note circle
-            ctx.stroke();
-          }
-        }
-        
-        if (border) {
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = "#fff";
-          ctx.beginPath();
-          ctx.arc(x,y,18,0,Math.PI*2);
-          ctx.stroke();
-        }
-
-        ctx.fillStyle="#000";
-        ctx.font="14px sans-serif";
-        ctx.textAlign="center";
-        ctx.textBaseline="middle";
-        ctx.fillText(n,x,y);
-      }
-    }
-  }
-  ctx.globalAlpha = 1.0;
-}
-
-// ------------- MAIN RENDER -------------
-function render() {
-  let strings = [...TUNINGS[tuningSel.value]];
-  if (flipSel.checked) strings.reverse();
-
-  drawFretboard(strings, flipSel.checked);
-
-  const chordRoot = chordRootSel.value;
-  const chordType = chordTypeSel.value;
-  const scaleRoot = scaleRootSel.value;
-  const scaleMode = scaleModeSel.value;
-
-  const chordNotes = getNotes(chordRoot, CHORD_INTERVALS[chordType]);
-  const scaleNotes = getNotes(scaleRoot, MODES[scaleMode]);
-
-  if (showScale.checked) {
-    // scale bright, chord dim
-    if (!hideScale.checked) plotNotes(strings, scaleNotes, "#0af", 1.0, false);
-    if (!hideChord.checked) plotNotes(strings, chordNotes, "#ff0", 0.33, true);
-  } else {
-    // chord bright, scale dim
-    if (!hideScale.checked) plotNotes(strings, scaleNotes, "#0af", 0.50, false);
-    if (!hideChord.checked) plotNotes(strings, chordNotes, "#f60", 1.0, true);
-  }
-  
-  textout(
-    `Chord: ${displayNote(chordRootSel.value, useFlats.checked)} ${chordTypeSel.value}\n` +
-    `Scale: ${displayNote(scaleRootSel.value, useFlats.checked)} ${scaleModeSel.value}\n` +
-    `Tuning: ${tuningSel.value}\n\n` +
-    `${gentext}`
-  );
-}
-
-// ------------- EVENTS -------------
-[
-  chordRootSel, chordTypeSel,
-  scaleRootSel, scaleModeSel,
-  tuningSel, showScale, flipSel,
-  showRoot, useFlats
-].forEach(el => el.onchange = render);
